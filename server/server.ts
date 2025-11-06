@@ -1,7 +1,7 @@
 import fastify from "fastify"
 import cors from "@fastify/cors"
 import 'dotenv/config'
-import userRoutes from "./routes/userRoute.js"
+import userRoutes from "./routes/userRoute.ts"
 
 const app = fastify({
     logger: true

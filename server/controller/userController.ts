@@ -1,9 +1,12 @@
-import * as User from '../models/userModels.js'
+import * as User from '../models/userModels.ts'
 import bcrypt from 'bcrypt'
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import jwt from 'jsonwebtoken'
+import type { IloginBody, TUser } from '../types/user.types.ts';
 
 
-export async function register(request, reply) {
+
+export async function register(request: FastifyRequest<{ Body: IloginBody}>, reply: FastifyReply) {
   const { username, password } = request.body;
 
   if (!username.trim() || !password.trim()) {
@@ -26,7 +29,7 @@ export async function register(request, reply) {
     if(existsUser) return reply.code(409).send({ error: 'User already exists' })
 
     const hashPassword = await bcrypt.hash(password, 10);
-    const user = await User.register(username, hashPassword);
+    await User.register(username, hashPassword);
     reply.code(201).send({ message: 'User was created'});
   } catch (error) {
     reply.code(500).send({ error: 'Internal server error' });
@@ -34,23 +37,25 @@ export async function register(request, reply) {
 }
 
 
-export async function login(request, reply) {
+export async function login(request: FastifyRequest<{ Body: IloginBody}>, reply: FastifyReply) {
     const { username, password } = request.body
     
     try {
-        const user = await User.getUserByUsername(username)
+        const user: TUser | null = await User.getUserByUsername(username)
         if (!user) return reply.code(400).send({ error: 'Invalid username or password' })
 
         const isPasswordValid = await bcrypt.compare(password, user.password)
         if (!isPasswordValid) return reply.code(400).send({ error: 'Invalid username or password' })
 
+
+        const SECRET_KEY = process.env['SECRET_KEY'] as string
         const token = jwt.sign(
             {
                 id: user.id,
                 username: user.username,
                 role: user.role
             }, 
-            process.env.SECRET_KEY,
+            SECRET_KEY,
             {
                 expiresIn: '1h'
             }
